@@ -40,11 +40,11 @@ import (
 	"github.com/pingcap/tidb/store/tikv"
 	"github.com/pingcap/tidb/util/printer"
 	"github.com/pingcap/tidb/util/systimemon"
-	"github.com/pingcap/tidb/x-server"
 	"github.com/pingcap/tipb/go-binlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"google.golang.org/grpc"
+	"github.com/pingcap"
 )
 
 // Flag Names
@@ -68,6 +68,7 @@ const (
 )
 
 var (
+<<<<<<< HEAD
 	version    = flagBoolean(nmVersion, false, "print version information and exit")
 	configPath = flag.String(nmConfig, "", "config file path")
 

@@ -59,7 +59,7 @@ func (ts *TidbTestSuite) SetUpSuite(c *C) {
 		},
 	}
 
-	server, err := NewServer(cfg, ts.tidbdrv)
+	server, err := NewServer(cfg, ts.tidbdrv, MysqlProtocol)
 	c.Assert(err, IsNil)
 	ts.server = server
 	go ts.server.Run()
@@ -152,7 +152,7 @@ func (ts *TidbTestSuite) TestSocket(c *C) {
 		},
 	}
 
-	server, err := NewServer(cfg, ts.tidbdrv)
+	server, err := NewServer(cfg, ts.tidbdrv, MysqlProtocol)
 	c.Assert(err, IsNil)
 	go server.Run()
 	time.Sleep(time.Millisecond * 100)

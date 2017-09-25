@@ -887,4 +887,12 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
 	ErrInvalidJSONData:                                       "Invalid data type for JSON data",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErXBadMessage:                                            "Invalid message",
+	ErXBadSchema:                                             "Invalid schema",
+	ErXBadTable:                                              "Invalid collection name",
+	ErXCapabilitiesPrepareFailed:                             "Capability prepare failed for '%s'",
+	ErXInvalidNamespace:                                      "Unknown namespace %s",
+	ErXInvalidAdminCommand:                                   "Invalid %s command %s",
+	ErXCmdNumArguments:                                       "Invalid number of arguments, expected %d but got %d",
+	ErXCmdArgumentType:                                       "Invalid type for argument '%s' at #%d (should be %s)",
 }

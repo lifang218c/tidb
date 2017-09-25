@@ -52,14 +52,15 @@ import (
 	"github.com/pingcap/tidb/kv"
 	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/terror"
+	"github.com/pingcap/tidb/util"
 	"github.com/pingcap/tidb/util/arena"
 	"github.com/pingcap/tidb/util/auth"
 	"github.com/pingcap/tidb/util/hack"
 )
 
-// clientConn represents a connection between server and client, it maintains connection specific state,
+// mysqlClientConn represents a connection between server and client, it maintains connection specific state,
 // handles client query.
-type clientConn struct {
+type mysqlClientConn struct {
 	pkt          *packetIO         // a helper to read and write data in packet format.
 	bufReadConn  *bufferedReadConn // a buffered-read net.Conn or buffered-read tls.Conn.
 	tlsConn      *tls.Conn         // TLS connection, nil if not TLS.
@@ -72,12 +73,12 @@ type clientConn struct {
 	salt         []byte            // random bytes used for authentication.
 	alloc        arena.Allocator   // an memory allocator for reducing memory allocation.
 	lastCmd      string            // latest sql query string, currently used for logging error.
-	ctx          QueryCtx          // an interface to execute sql statements.
+	ctx          QueryCtx   // an interface to execute sql statements.
 	attrs        map[string]string // attributes parsed from client handshake response, not used for now.
 	killed       bool
 }
 
-func (cc *clientConn) String() string {
+func (cc *mysqlClientConn) String() string {
 	collationStr := mysql.Collations[cc.collation]
 	return fmt.Sprintf("id:%d, addr:%s status:%d, collation:%s, user:%s",
 		cc.connectionID, cc.bufReadConn.RemoteAddr(), cc.ctx.Status(), collationStr, cc.user,
@@ -87,7 +88,7 @@ func (cc *clientConn) String() string {
 // handshake works like TCP handshake, but in a higher level, it first writes initial packet to client,
 // during handshake, client and server negotiate compatible features and do authentication.
 // After handshake, client can send sql query to server.
-func (cc *clientConn) handshake() error {
+func (cc *mysqlClientConn) handshake() error {
 	if err := cc.writeInitialHandshake(); err != nil {
 		return errors.Trace(err)
 	}
@@ -112,7 +113,7 @@ func (cc *clientConn) handshake() error {
 	return errors.Trace(cc.flush())
 }
 
-func (cc *clientConn) Close() error {
+func (cc *mysqlClientConn) Close() error {
 	cc.server.rwlock.Lock()
 	delete(cc.server.clients, cc.connectionID)
 	connections := len(cc.server.clients)
@@ -127,7 +128,7 @@ func (cc *clientConn) Close() error {
 
 // writeInitialHandshake sends server version, connection ID, server capability, collation, server status
 // and auth salt to the client.
-func (cc *clientConn) writeInitialHandshake() error {
+func (cc *mysqlClientConn) writeInitialHandshake() error {
 	data := make([]byte, 4, 128)
 
 	// min version 10
@@ -170,11 +171,11 @@ func (cc *clientConn) writeInitialHandshake() error {
 	return errors.Trace(cc.flush())
 }
 
-func (cc *clientConn) readPacket() ([]byte, error) {
+func (cc *mysqlClientConn) readPacket() ([]byte, error) {
 	return cc.pkt.readPacket()
 }
 
-func (cc *clientConn) writePacket(data []byte) error {
+func (cc *mysqlClientConn) writePacket(data []byte) error {
 	return cc.pkt.writePacket(data)
 }
 
@@ -301,7 +302,7 @@ func parseAttrs(data []byte) (map[string]string, error) {
 	return attrs, nil
 }
 
-func (cc *clientConn) readOptionalSSLRequestAndHandshakeResponse() error {
+func (cc *mysqlClientConn) readOptionalSSLRequestAndHandshakeResponse() error {
 	// Read a packet. It may be a SSLRequest or HandshakeResponse.
 	data, err := cc.readPacket()
 	if err != nil {
@@ -376,7 +377,7 @@ func (cc *clientConn) readOptionalSSLRequestAndHandshakeResponse() error {
 // Run reads client query and writes query result to client in for loop, if there is a panic during query handling,
 // it will be recovered and log the panic error.
 // This function returns and the connection is closed if there is an IO error or there is a panic.
-func (cc *clientConn) Run() {
+func (cc *mysqlClientConn) Run() {
 	const size = 4096
 	defer func() {
 		r := recover()
@@ -447,7 +448,7 @@ func errStrForLog(err error) string {
 	return errors.ErrorStack(err)
 }
 
-func (cc *clientConn) addMetrics(cmd byte, startTime time.Time, err error) {
+func (cc *mysqlClientConn) addMetrics(cmd byte, startTime time.Time, err error) {
 	var label string
 	switch cmd {
 	case mysql.ComSleep:
@@ -488,7 +489,7 @@ func (cc *clientConn) addMetrics(cmd byte, startTime time.Time, err error) {
 // dispatch handles client request based on command which is the first byte of the data.
 // It also gets a token from server which is used to limit the concurrently handling clients.
 // The most frequently used command is ComQuery.
-func (cc *clientConn) dispatch(data []byte) error {
+func (cc *mysqlClientConn) dispatch(data []byte) error {
 	cmd := data[0]
 	data = data[1:]
 	cc.lastCmd = hack.String(data)
@@ -540,7 +541,7 @@ func (cc *clientConn) dispatch(data []byte) error {
 	}
 }
 
-func (cc *clientConn) useDB(db string) (err error) {
+func (cc *mysqlClientConn) useDB(db string) (err error) {
 	// if input is "use `SELECT`", mysql client just send "SELECT"
 	// so we add `` around db.
 	_, err = cc.ctx.Execute("use `" + db + "`")
@@ -551,11 +552,11 @@ func (cc *clientConn) useDB(db string) (err error) {
 	return
 }
 
-func (cc *clientConn) flush() error {
+func (cc *mysqlClientConn) flush() error {
 	return cc.pkt.flush()
 }
 
-func (cc *clientConn) writeOK() error {
+func (cc *mysqlClientConn) writeOK() error {
 	data := cc.alloc.AllocWithLen(4, 32)
 	data = append(data, mysql.OKHeader)
 	data = append(data, dumpLengthEncodedInt(uint64(cc.ctx.AffectedRows()))...)
@@ -573,7 +574,7 @@ func (cc *clientConn) writeOK() error {
 	return errors.Trace(cc.flush())
 }
 
-func (cc *clientConn) writeError(e error) error {
+func (cc *mysqlClientConn) writeError(e error) error {
 	var (
 		m  *mysql.SQLError
 		te *terror.Error
@@ -608,7 +609,7 @@ func (cc *clientConn) writeError(e error) error {
 // packets following it, the "more" argument would indicates that case.
 // If "more" is true, a mysql.ServerMoreResultsExists bit would be set
 // in the packet.
-func (cc *clientConn) writeEOF(more bool) error {
+func (cc *mysqlClientConn) writeEOF(more bool) error {
 	data := cc.alloc.AllocWithLen(4, 9)
 
 	data = append(data, mysql.EOFHeader)
@@ -625,7 +626,7 @@ func (cc *clientConn) writeEOF(more bool) error {
 	return errors.Trace(err)
 }
 
-func (cc *clientConn) writeReq(filePath string) error {
+func (cc *mysqlClientConn) writeReq(filePath string) error {
 	data := cc.alloc.AllocWithLen(4, 5+len(filePath))
 	data = append(data, mysql.LocalInFileHeader)
 	data = append(data, filePath...)
@@ -663,7 +664,7 @@ func insertDataWithCommit(prevData, curData []byte, loadDataInfo *executor.LoadD
 
 // handleLoadData does the additional work after processing the 'load data' query.
 // It sends client a file path, then reads the file content from client, inserts data into database.
-func (cc *clientConn) handleLoadData(loadDataInfo *executor.LoadDataInfo) error {
+func (cc *mysqlClientConn) handleLoadData(loadDataInfo *executor.LoadDataInfo) error {
 	// If the server handles the load data request, the client has to set the ClientLocalFiles capability.
 	if cc.capability&mysql.ClientLocalFiles == 0 {
 		return errNotAllowedCommand
@@ -723,7 +724,7 @@ func (cc *clientConn) handleLoadData(loadDataInfo *executor.LoadDataInfo) error 
 // handleQuery executes the sql query string and writes result set or result ok to the client.
 // As the execution time of this function represents the performance of TiDB, we do time log and metrics here.
 // There is a special query `load data` that does not return result, which is handled differently.
-func (cc *clientConn) handleQuery(sql string) (err error) {
+func (cc *mysqlClientConn) handleQuery(sql string) (err error) {
 	rs, err := cc.ctx.Execute(sql)
 	if err != nil {
 		executeErrorCounter.WithLabelValues(executeErrorToLabel(err)).Inc()
@@ -750,7 +751,7 @@ func (cc *clientConn) handleQuery(sql string) (err error) {
 
 // handleFieldList returns the field list for a table.
 // The sql string is composed of a table name and a terminating character \x00.
-func (cc *clientConn) handleFieldList(sql string) (err error) {
+func (cc *mysqlClientConn) handleFieldList(sql string) (err error) {
 	parts := strings.Split(sql, "\x00")
 	columns, err := cc.ctx.FieldList(parts[0])
 	if err != nil {
@@ -774,7 +775,7 @@ func (cc *clientConn) handleFieldList(sql string) (err error) {
 // If binary is true, the data would be encoded in BINARY format.
 // If more is true, a flag bit would be set to indicate there are more
 // resultsets, it's used to support the MULTI_RESULTS capability in mysql protocol.
-func (cc *clientConn) writeResultset(rs ResultSet, binary bool, more bool) error {
+func (cc *mysqlClientConn) writeResultset(rs ResultSet, binary bool, more bool) error {
 	defer rs.Close()
 	// We need to call Next before we get columns.
 	// Otherwise, we will get incorrect columns info.
@@ -851,7 +852,7 @@ func (cc *clientConn) writeResultset(rs ResultSet, binary bool, more bool) error
 	return errors.Trace(cc.flush())
 }
 
-func (cc *clientConn) writeMultiResultset(rss []ResultSet, binary bool) error {
+func (cc *mysqlClientConn) writeMultiResultset(rss []ResultSet, binary bool) error {
 	for _, rs := range rss {
 		if err := cc.writeResultset(rs, binary, true); err != nil {
 			return errors.Trace(err)
@@ -860,7 +861,7 @@ func (cc *clientConn) writeMultiResultset(rss []ResultSet, binary bool) error {
 	return cc.writeOK()
 }
 
-func (cc *clientConn) setConn(conn net.Conn) {
+func (cc *mysqlClientConn) setConn(conn net.Conn) {
 	cc.bufReadConn = newBufferedReadConn(conn)
 	if cc.pkt == nil {
 		cc.pkt = newPacketIO(cc.bufReadConn)
@@ -870,7 +871,7 @@ func (cc *clientConn) setConn(conn net.Conn) {
 	}
 }
 
-func (cc *clientConn) upgradeToTLS(tlsConfig *tls.Config) error {
+func (cc *mysqlClientConn) upgradeToTLS(tlsConfig *tls.Config) error {
 	// Important: read from buffered reader instead of the original net.Conn because it may contain data we need.
 	tlsConn := tls.Server(cc.bufReadConn, tlsConfig)
 	if err := tlsConn.Handshake(); err != nil {
@@ -879,4 +880,23 @@ func (cc *clientConn) upgradeToTLS(tlsConfig *tls.Config) error {
 	cc.setConn(tlsConn)
 	cc.tlsConn = tlsConn
 	return nil
+}
+
+func (cc *mysqlClientConn) isKilled() bool {
+	return cc.killed
+}
+
+func (cc *mysqlClientConn) Cancel(query bool) {
+	cc.ctx.Cancel()
+	if !query {
+		cc.killed = true
+	}
+}
+
+func (cc *mysqlClientConn) id() uint32 {
+	return cc.connectionID
+}
+
+func (cc *mysqlClientConn) showProcess() util.ProcessInfo {
+	return cc.ctx.ShowProcess()
 }
