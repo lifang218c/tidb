@@ -906,13 +906,13 @@ const (
 	ErXBadTypeOfUpdate                                              = 5051
 	ErXBadColumnToUpdate                                            = 5052
 	ErXBadMemberToUpdate                                            = 5053
-	ErXBadStatementId                                               = 5110
-	ErXBadCursorId                                                  = 5111
+	ErXBadStatementID                                               = 5110
+	ErXBadCursorID                                                  = 5111
 	ErXBadSchema                                                    = 5112
 	ErXBadTable                                                     = 5113
 	ErXBadProjection                                                = 5114
-	ErXDocIdMissing                                                 = 5115
-	ErXDocIdDuplicate                                               = 5116
+	ErXDocIDMissing                                                 = 5115
+	ErXDocIDDuplicate                                               = 5116
 	ErXDocRequiredFieldMissing                                      = 5117
 	ErXProjBadKeyName                                               = 5120
 	ErXBadDocPath                                                   = 5121

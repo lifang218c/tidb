@@ -17,32 +17,30 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type Status int32
-
 const (
-	Ongoing Status = iota
-	Succeeded
-	Failed
-	Error
+	authOngoing int32 = iota
+	authSucceed
+	authFailed
+	authError
 )
 
 type response struct {
 	data    string
-	status  Status
+	status  int32
 	errCode uint16
 }
 
 type authHandler interface {
-	handleStart(mechanism *string, data []byte, initial_response []byte) *response
+	handleStart(mechanism *string, data []byte, initialResponses []byte) *response
 	handleContinue(data []byte) *response
 }
 
-func (xa *XAuth) createAuthHandler(method string) authHandler {
+func (xa *xAuth) createAuthHandler(method string) authHandler {
 	switch method {
 	case "MYSQL41":
 		return &saslMysql41Auth{
-			m_state: S_starting,
-			xauth:   xa,
+			mState: sStarting,
+			xauth:  xa,
 		}
 	//@TODO support in next pr
 	case "PLAIN":

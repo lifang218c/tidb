@@ -48,8 +48,8 @@ import (
 	"github.com/pingcap/tidb/util"
 	"github.com/pingcap/tidb/util/arena"
 	"github.com/pingcap/tidb/xprotocol/xpacketio"
-	"time"
 	"math/rand"
+	"time"
 )
 
 var (

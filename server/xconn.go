@@ -35,7 +35,7 @@ import (
 type mysqlXClientConn struct {
 	pkt          *xpacketio.XPacketIO // a helper to read and write data in packet format.
 	conn         net.Conn
-	xauth        *XAuth
+	xauth        *xAuth
 	xsession     *xSession
 	server       *Server                        // a reference of server instance.
 	capability   uint32                         // client capability affects the way server handles client request.
@@ -47,7 +47,7 @@ type mysqlXClientConn struct {
 	salt         []byte                         // random bytes used for authentication.
 	alloc        arena.Allocator                // an memory allocator for reducing memory allocation.
 	lastCmd      string                         // latest sql query string, currently used for logging error.
-	ctx          QueryCtx                // an interface to execute sql statements.
+	ctx          QueryCtx                       // an interface to execute sql statements.
 	attrs        map[string]string              // attributes parsed from client handshake response, not used for now.
 	killed       bool
 }
@@ -144,7 +144,6 @@ func (xcc *mysqlXClientConn) handshakeConnection() error {
 	return xcc.writeError(xutil.ErXCapabilitiesPrepareFailed.GenByArgs("tls"))
 }
 
-
 func (xcc *mysqlXClientConn) auth() error {
 	for {
 		tp, msg, err := xcc.pkt.ReadPacket()
@@ -202,8 +201,6 @@ func (xcc *mysqlXClientConn) dispatch(tp Mysqlx.ClientMessages_Type, payload []b
 	default:
 		return xcc.xsession.handleMessage(msgType, payload)
 	}
-
-	return nil
 }
 
 func (xcc *mysqlXClientConn) flush() error {
@@ -260,8 +257,8 @@ func (xcc *mysqlXClientConn) useDB(db string) (err error) {
 	return
 }
 
-func (xcc *mysqlXClientConn) createAuth(id uint32) *XAuth {
-	return &XAuth{
+func (xcc *mysqlXClientConn) createAuth(id uint32) *xAuth {
+	return &xAuth{
 		xcc:               xcc,
 		mState:            authenticating,
 		mStateBeforeClose: authenticating,
@@ -279,7 +276,7 @@ func (xcc *mysqlXClientConn) configCapabilities() {
 }
 
 type xSession struct {
-	xsql  *xSQL
+	xsql *xSQL
 }
 
 func (xcc *mysqlXClientConn) createXSession() *xSession {

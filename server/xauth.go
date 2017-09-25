@@ -17,9 +17,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tidb/xprotocol/notice"
+	"github.com/pingcap/tidb/xprotocol/util"
 	"github.com/pingcap/tipb/go-mysqlx"
 	"github.com/pingcap/tipb/go-mysqlx/Session"
-	"github.com/pingcap/tidb/xprotocol/util"
 )
 
 type sessionState int32
@@ -33,7 +33,7 @@ const (
 	closing
 )
 
-type XAuth struct {
+type xAuth struct {
 	xcc         *mysqlXClientConn
 	authHandler authHandler
 
@@ -41,7 +41,7 @@ type XAuth struct {
 	mStateBeforeClose sessionState
 }
 
-func (xa *XAuth) handleMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
+func (xa *xAuth) handleMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
 	if xa.mState == authenticating {
 		return xa.handleAuthMessage(msgType, payload)
 	} else if xa.mState == ready {
@@ -52,7 +52,7 @@ func (xa *XAuth) handleMessage(msgType Mysqlx.ClientMessages_Type, payload []byt
 	return util.ErrorMessage(mysql.ErrUnknown, "unknown ssession state.")
 }
 
-func (xa *XAuth) handleReadyMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
+func (xa *xAuth) handleReadyMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
 	switch msgType {
 	case Mysqlx.ClientMessages_SESS_CLOSE:
 		notice.SendNoticeOK(xa.xcc.pkt, "bye!")
@@ -70,7 +70,7 @@ func (xa *XAuth) handleReadyMessage(msgType Mysqlx.ClientMessages_Type, payload 
 	return util.ErXBadMessage
 }
 
-func (xa *XAuth) handleAuthMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
+func (xa *xAuth) handleAuthMessage(msgType Mysqlx.ClientMessages_Type, payload []byte) error {
 	var r *response
 	switch msgType {
 	case Mysqlx.ClientMessages_SESS_AUTHENTICATE_START:
@@ -82,9 +82,9 @@ func (xa *XAuth) handleAuthMessage(msgType Mysqlx.ClientMessages_Type, payload [
 
 		xa.authHandler = xa.createAuthHandler(*data.MechName)
 		if xa.authHandler == nil {
-			log.Errorf("[%d] Can't create XAuth handler with mech name %s", xa.xcc.connectionID, *data.MechName)
+			log.Errorf("[%d] Can't create xAuth handler with mech name %s", xa.xcc.connectionID, *data.MechName)
 			xa.stopAuth()
-			return util.ErrorMessage(mysql.ErrNotSupportedAuthMode,"Invalid authentication method "+*data.MechName)
+			return util.ErrorMessage(mysql.ErrNotSupportedAuthMode, "Invalid authentication method "+*data.MechName)
 		}
 
 		r = xa.authHandler.handleStart(data.MechName, data.AuthData, data.InitialResponse)
@@ -102,9 +102,9 @@ func (xa *XAuth) handleAuthMessage(msgType Mysqlx.ClientMessages_Type, payload [
 	}
 
 	switch r.status {
-	case Succeeded:
+	case authSucceed:
 		xa.onAuthSuccess(r)
-	case Failed:
+	case authFailed:
 		xa.onAuthFailure(r)
 		return util.ErrorMessage(mysql.ErrAccessDenied, r.data)
 	default:
@@ -114,22 +114,22 @@ func (xa *XAuth) handleAuthMessage(msgType Mysqlx.ClientMessages_Type, payload [
 	return nil
 }
 
-func (xa *XAuth) onAuthSuccess(r *response) {
-	notice.SendClientId(xa.xcc.pkt, xa.xcc.connectionID)
+func (xa *xAuth) onAuthSuccess(r *response) {
+	notice.SendClientID(xa.xcc.pkt, xa.xcc.connectionID)
 	xa.stopAuth()
 	xa.mState = ready
 	xa.sendAuthOk(&r.data)
 }
 
-func (xa *XAuth) onAuthFailure(r *response) {
+func (xa *xAuth) onAuthFailure(r *response) {
 	xa.stopAuth()
 }
 
 //@TODO need to implement
-func (xa *XAuth) onSessionReset() {
+func (xa *xAuth) onSessionReset() {
 }
 
-func (xa *XAuth) onClose(updateOldState bool) {
+func (xa *xAuth) onClose(updateOldState bool) {
 	if xa.mState != closing {
 		if updateOldState {
 			xa.mStateBeforeClose = xa.mState
@@ -138,15 +138,15 @@ func (xa *XAuth) onClose(updateOldState bool) {
 	}
 }
 
-func (xa *XAuth) stopAuth() {
+func (xa *xAuth) stopAuth() {
 	xa.authHandler = nil
 }
 
-func (xa *XAuth) ready() bool {
+func (xa *xAuth) ready() bool {
 	return xa.mState == ready
 }
 
-func (xa *XAuth) sendAuthOk(value *string) error {
+func (xa *xAuth) sendAuthOk(value *string) error {
 	msg := Mysqlx_Session.AuthenticateOk{
 		AuthData: []byte(*value),
 	}
@@ -159,7 +159,7 @@ func (xa *XAuth) sendAuthOk(value *string) error {
 	return xa.xcc.pkt.WritePacket(Mysqlx.ServerMessages_SESS_AUTHENTICATE_OK, data)
 }
 
-func (xa *XAuth) sendAuthContinue(value *string) error {
+func (xa *xAuth) sendAuthContinue(value *string) error {
 	msg := Mysqlx_Session.AuthenticateContinue{
 		AuthData: []byte(*value),
 	}

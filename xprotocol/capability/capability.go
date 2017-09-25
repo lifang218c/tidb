@@ -53,9 +53,9 @@ func CheckCapabilitiesPrepareSetMsg(tp Mysqlx.ClientMessages_Type, msg []byte) (
 	}
 	return []Handler{
 		&HandlerExpiredPasswords{
-			Name: "client.pwd_expire_ok",
+			Name:    "client.pwd_expire_ok",
 			Expired: true},
-			}, nil
+	}, nil
 }
 
 // CheckCapabilitiesGetMsg deals capabilities get message, get message content will always be empty.

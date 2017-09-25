@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/tipb/go-mysqlx"
 )
 
+// Error messages
 var (
 	ErXBadMessage                = ErrorMessage(mysql.ErXBadMessage, mysql.MySQLErrName[mysql.ErXBadMessage])
 	ErXCapabilitiesPrepareFailed = ErrorMessage(mysql.ErXCapabilitiesPrepareFailed, mysql.MySQLErrName[mysql.ErXCapabilitiesPrepareFailed])
@@ -31,8 +32,8 @@ var (
 	ErXBadNotice                 = ErrorMessage(mysql.ErXBadNotice, mysql.MySQLErrName[mysql.ErXBadNotice])
 	ErXInvalidNamespace          = ErrorMessage(mysql.ErXInvalidNamespace, mysql.MySQLErrName[mysql.ErXInvalidNamespace])
 	ErXInvalidAdminCommand       = ErrorMessage(mysql.ErXInvalidAdminCommand, mysql.MySQLErrName[mysql.ErXInvalidAdminCommand])
-	ErXCmdNumArguments       = ErrorMessage(mysql.ErXCmdNumArguments, mysql.MySQLErrName[mysql.ErXCmdNumArguments])
-	ErXCmdArgumentType       = ErrorMessage(mysql.ErXCmdArgumentType, mysql.MySQLErrName[mysql.ErXCmdArgumentType])
+	ErXCmdNumArguments           = ErrorMessage(mysql.ErXCmdNumArguments, mysql.MySQLErrName[mysql.ErXCmdNumArguments])
+	ErXCmdArgumentType           = ErrorMessage(mysql.ErXCmdArgumentType, mysql.MySQLErrName[mysql.ErXCmdArgumentType])
 )
 
 const (
@@ -50,8 +51,8 @@ const (
 	codeErXExprMissingArg                           = terror.ErrCode(mysql.ErXExprMissingArg)
 	codeErXInvalidNamespace                         = terror.ErrCode(mysql.ErXInvalidNamespace)
 	codeErXInvalidAdminCommand                      = terror.ErrCode(mysql.ErXInvalidAdminCommand)
-	codeErXCmdNumArguments                      = terror.ErrCode(mysql.ErXCmdNumArguments)
-	codeErXCmdArgumentType                      = terror.ErrCode(mysql.ErXCmdArgumentType)
+	codeErXCmdNumArguments                          = terror.ErrCode(mysql.ErXCmdNumArguments)
+	codeErXCmdArgumentType                          = terror.ErrCode(mysql.ErXCmdArgumentType)
 )
 
 func init() {
@@ -70,8 +71,8 @@ func init() {
 		codeErXExprMissingArg:            mysql.ErXExprMissingArg,
 		codeErXInvalidNamespace:          mysql.ErXInvalidNamespace,
 		codeErXInvalidAdminCommand:       mysql.ErXInvalidAdminCommand,
-		codeErXCmdNumArguments:       mysql.ErXCmdNumArguments,
-		codeErXCmdArgumentType:       mysql.ErXCmdArgumentType,
+		codeErXCmdNumArguments:           mysql.ErXCmdNumArguments,
+		codeErXCmdArgumentType:           mysql.ErXCmdArgumentType,
 	}
 	terror.ErrClassToMySQLCodes[terror.ClassXProtocol] = xProtocolMySQLErrCodes
 }

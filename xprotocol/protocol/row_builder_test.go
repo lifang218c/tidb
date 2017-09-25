@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb/util/arena"
 	"github.com/pingcap/tidb/terror"
+	"github.com/pingcap/tidb/util/arena"
 )
 
 type testProtocolTestSuite struct{}
@@ -48,10 +48,10 @@ func (ts *testProtocolTestSuite) TestStrToXDecimal(c *C) {
 	c.Parallel()
 	ins := []string{"", "1.1.1", "1", "+1.1", "-1.1", "1.1", "-.1", ".1", "1.11", "a"}
 	ierr := errors.New("invalid decimal")
-	expect := []struct{
+	expect := []struct {
 		b []byte
 		e error
-	} {
+	}{
 		{nil, nil},
 		{nil, ierr},
 		{[]byte{0x0, 0x1c}, nil},

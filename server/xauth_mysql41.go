@@ -25,78 +25,76 @@ import (
 type authMysql41State int32
 
 const (
-	S_starting authMysql41State = iota
-	S_waiting_response
-	S_done
-	S_error
+	sStarting authMysql41State = iota
+	sWaitingResponse
+	sDone
+	sError
 )
 
 type saslMysql41Auth struct {
-	m_state authMysql41State
-	m_salt  []byte
-
-	xauth *XAuth
+	mState authMysql41State
+	mSalts []byte
+	xauth  *xAuth
 }
 
-func (spa *saslMysql41Auth) handleStart(mechanism *string, data []byte, initial_response []byte) *response {
+func (spa *saslMysql41Auth) handleStart(mechanism *string, data []byte, initialResponses []byte) *response {
 	r := response{}
 
-	if spa.m_state == S_starting {
-		spa.m_salt = util.RandomBuf(mysql.ScrambleLength)
-		r.data = string(spa.m_salt)
-		r.status = Ongoing
+	if spa.mState == sStarting {
+		spa.mSalts = util.RandomBuf(mysql.ScrambleLength)
+		r.data = string(spa.mSalts)
+		r.status = authOngoing
 		r.errCode = 0
-		spa.m_state = S_waiting_response
+		spa.mState = sWaitingResponse
 	} else {
-		r.status = Error
+		r.status = authError
 		r.errCode = mysql.ErrNetPacketsOutOfOrder
 
-		spa.m_state = S_error
+		spa.mState = sError
 	}
 
 	return &r
 }
 
 func (spa *saslMysql41Auth) handleContinue(data []byte) *response {
-	if spa.m_state == S_waiting_response {
+	if spa.mState == sWaitingResponse {
 		dbname, user, passwd := spa.extractNullTerminatedElement(data)
 		xcc := spa.xauth.xcc
 		xcc.dbname = string(dbname)
 		xcc.user = string(user)
 
-		spa.m_state = S_done
+		spa.mState = sDone
 		if !spa.xauth.xcc.server.skipAuth() {
 			// Do Auth
 			addr := spa.xauth.xcc.conn.RemoteAddr().String()
 			host, _, err := net.SplitHostPort(addr)
 			if err != nil {
 				return &response{
-					status: Failed,
-					data: xutil.ErrAccessDenied.ToSQLError().Message,
+					status:  authFailed,
+					data:    xutil.ErrAccessDenied.ToSQLError().Message,
 					errCode: xutil.ErrAccessDenied.ToSQLError().Code,
-					}
+				}
 			}
 			if !spa.xauth.xcc.ctx.Auth(&auth.UserIdentity{Username: string(user), Hostname: host},
-				passwd, spa.m_salt) {
+				passwd, spa.mSalts) {
 				return &response{
-					status: Failed,
-					data: xutil.ErrAccessDenied.ToSQLError().Message,
+					status:  authFailed,
+					data:    xutil.ErrAccessDenied.ToSQLError().Message,
 					errCode: xutil.ErrAccessDenied.ToSQLError().Code,
 				}
 			}
 		}
 
 		return &response{
-			status: Succeeded,
+			status:  authSucceed,
 			errCode: 0,
 		}
-	} else {
-		spa.m_state = S_error
+	}
+	spa.mState = sError
 
-		return &response{
-			status: Error,
-			errCode: mysql.ErrNetPacketsOutOfOrder,
-			}
+	return &response{
+		status:  authError,
+		errCode: mysql.ErrNetPacketsOutOfOrder,
 	}
 }
 

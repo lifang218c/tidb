@@ -71,7 +71,6 @@ func (xsql *xSQL) dispatchAdminCmd(msg Mysqlx_Sql.StmtExecute) error {
 	default:
 		return util.ErXInvalidAdminCommand.GenByArgs(msg.GetNamespace(), stmt)
 	}
-	return nil
 }
 
 func (xsql *xSQL) ping(args []*Mysqlx_Datatypes.Any) error {
@@ -86,7 +85,7 @@ func (xsql *xSQL) listClients() error {
 }
 
 func (xsql *xSQL) killClient(args []*Mysqlx_Datatypes.Any) error {
-	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type { Mysqlx_Datatypes.Scalar_V_UINT, }); err != nil {
+	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type{Mysqlx_Datatypes.Scalar_V_UINT}); err != nil {
 		return errors.Trace(err)
 	}
 	id := args[0].GetScalar().GetVUnsignedInt()
@@ -95,7 +94,7 @@ func (xsql *xSQL) killClient(args []*Mysqlx_Datatypes.Any) error {
 }
 
 func (xsql *xSQL) createCollectionImpl(args []*Mysqlx_Datatypes.Any) error {
-	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type { Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING, }); err != nil {
+	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type{Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING}); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -139,7 +138,7 @@ func (xsql *xSQL) ensureCollection(args []*Mysqlx_Datatypes.Any) error {
 }
 
 func (xsql *xSQL) dropCollection(args []*Mysqlx_Datatypes.Any) error {
-	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type { Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING, }); err != nil {
+	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type{Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING}); err != nil {
 		return errors.Trace(err)
 	}
 	schema := string(args[0].GetScalar().GetVString().GetValue())
@@ -164,7 +163,7 @@ func (xsql *xSQL) dropCollectionIndex(args []*Mysqlx_Datatypes.Any) error {
 }
 
 func (xsql *xSQL) listObjects(args []*Mysqlx_Datatypes.Any) error {
-	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type { Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING, }); err != nil {
+	if err := checkArgs(args, []Mysqlx_Datatypes.Scalar_Type{Mysqlx_Datatypes.Scalar_V_STRING, Mysqlx_Datatypes.Scalar_V_STRING}); err != nil {
 		return errors.Trace(err)
 	}
 	schema := string(args[0].GetScalar().GetVString().GetValue())
@@ -239,7 +238,6 @@ func (xsql *xSQL) isSchemaSelectedAndExists(schema string) error {
 	return xsql.executeStmtNoResult(sql)
 }
 
-
 func (xsql *xSQL) isCollection(schema string, collection string) (bool, error) {
 	sql := "SELECT COUNT(*) AS cnt," + countDoc + " As doc," + countID + " AS id," + countGen +
 		" AS gen " + "FROM information_schema.columns WHERE table_name = " +
@@ -253,7 +251,8 @@ func (xsql *xSQL) isCollection(schema string, collection string) (bool, error) {
 	if err != nil {
 		return false, errors.Trace(err)
 	}
-	if len(rs) != 1 { var name string
+	if len(rs) != 1 {
+		var name string
 		if len(schema) != 0 {
 			name = schema + "." + collection
 		} else {

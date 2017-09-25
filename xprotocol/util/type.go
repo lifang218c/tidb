@@ -14,10 +14,10 @@
 package util
 
 import (
-	"unicode"
 	"github.com/juju/errors"
 	"github.com/pingcap/tidb/mysql"
 	"github.com/pingcap/tipb/go-mysqlx/Resultset"
+	"unicode"
 )
 
 var unsignedXType = map[byte]Mysqlx_Resultset.ColumnMetaData_FieldType{
@@ -107,10 +107,12 @@ func MysqlType2XType(tp byte, unsigned bool) (Mysqlx_Resultset.ColumnMetaData_Fi
 	return Mysqlx_Resultset.ColumnMetaData_SINT, errors.Errorf("unknown column type %d", tp)
 }
 
+// QuoteIdentifier quotes identifier with "`".
 func QuoteIdentifier(str string) string {
 	return "`" + str + "`"
 }
 
+// QuoteIdentifierIfNeeded quotes identifier if needed.
 func QuoteIdentifierIfNeeded(str string) string {
 	needQuote := false
 	if len(str) > 0 && unicode.IsLetter(rune(str[0])) {
@@ -126,11 +128,11 @@ func QuoteIdentifierIfNeeded(str string) string {
 
 	if needQuote {
 		return QuoteIdentifier(str)
-	} else {
-		return str
 	}
+	return str
 }
 
+// QuoteString quotes string with "'".
 func QuoteString(str string) string {
 	return "'" + str + "'"
 }

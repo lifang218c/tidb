@@ -8,7 +8,7 @@ import (
 )
 
 // notice message sent to client.
-type Notice struct {
+type notice struct {
 	noticeType noticeType
 	value      []byte
 	pkt        *xpacketio.XPacketIO
@@ -17,16 +17,16 @@ type Notice struct {
 type noticeType uint32
 
 const (
-	KNoticeWarning                noticeType = 1
-	KNoticeSessionVariableChanged            = 2
-	KNoticeSessionStateChanged               = 3
+	noticeWarning                noticeType = 1
+	noticeSessionVariableChanged            = 2
+	noticeSessionStateChanged               = 3
 )
 
-func (n *Notice) sendLocalNotice(forceFlush bool) error {
+func (n *notice) sendLocalNotice(forceFlush bool) error {
 	return n.sendNotice(Mysqlx_Notice.Frame_LOCAL, forceFlush)
 }
 
-func (n *Notice) sendNotice(scope Mysqlx_Notice.Frame_Scope, forceFlush bool) error {
+func (n *notice) sendNotice(scope Mysqlx_Notice.Frame_Scope, forceFlush bool) error {
 	frameType := uint32(n.noticeType)
 	msg := Mysqlx_Notice.Frame{
 		Type:    &frameType,
@@ -55,15 +55,16 @@ func SendNoticeOK(pkt *xpacketio.XPacketIO, content string) error {
 		return err
 	}
 
-	notice := Notice{
-		noticeType: KNoticeSessionStateChanged,
+	n := notice{
+		noticeType: noticeSessionStateChanged,
 		value:      data,
 		pkt:        pkt,
 	}
 
-	return notice.sendLocalNotice(false)
+	return n.sendLocalNotice(false)
 }
 
+// SendLastInsertID send a notice which contains last insert ID.
 func SendLastInsertID(pkt *xpacketio.XPacketIO, lastID uint64) error {
 	param := Mysqlx_Notice.SessionStateChanged_Parameter(Mysqlx_Notice.SessionStateChanged_GENERATED_INSERT_ID)
 	scalarType := Mysqlx_Datatypes.Scalar_V_UINT
@@ -81,20 +82,20 @@ func SendLastInsertID(pkt *xpacketio.XPacketIO, lastID uint64) error {
 		return err
 	}
 
-	notice := Notice{
-		noticeType: KNoticeSessionStateChanged,
+	n := notice{
+		noticeType: noticeSessionStateChanged,
 		value:      data,
 		pkt:        pkt,
 	}
 
-	return notice.sendLocalNotice(false)
+	return n.sendLocalNotice(false)
 }
 
-// SendClientId send client id to client
-func SendClientId(pkt *xpacketio.XPacketIO, sessionId uint32) error {
+// SendClientID send client id to client
+func SendClientID(pkt *xpacketio.XPacketIO, sessionID uint32) error {
 	param := Mysqlx_Notice.SessionStateChanged_Parameter(Mysqlx_Notice.SessionStateChanged_CLIENT_ID_ASSIGNED)
 	scalarType := Mysqlx_Datatypes.Scalar_V_UINT
-	id := uint64(sessionId)
+	id := uint64(sessionID)
 	msg := Mysqlx_Notice.SessionStateChanged{
 		Param: &param,
 		Value: &Mysqlx_Datatypes.Scalar{
@@ -108,11 +109,11 @@ func SendClientId(pkt *xpacketio.XPacketIO, sessionId uint32) error {
 		return err
 	}
 
-	notice := Notice{
-		noticeType: KNoticeSessionStateChanged,
+	n := notice{
+		noticeType: noticeSessionStateChanged,
 		value:      data,
 		pkt:        pkt,
 	}
 
-	return notice.sendLocalNotice(false)
+	return n.sendLocalNotice(false)
 }

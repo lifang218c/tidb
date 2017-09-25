@@ -38,7 +38,7 @@ func (ts *testUtilTestSuite) TestMysqlType2XType(c *C) {
 	urs := []struct {
 		xtp Mysqlx_Resultset.ColumnMetaData_FieldType
 		err error
-	} {
+	}{
 		{Mysqlx_Resultset.ColumnMetaData_DECIMAL, nil},
 		{Mysqlx_Resultset.ColumnMetaData_UINT, nil},
 		{Mysqlx_Resultset.ColumnMetaData_SINT, errors.New("unknown column type 240")},
@@ -52,7 +52,7 @@ func (ts *testUtilTestSuite) TestMysqlType2XType(c *C) {
 	srs := []struct {
 		xtp Mysqlx_Resultset.ColumnMetaData_FieldType
 		err error
-	} {
+	}{
 		{Mysqlx_Resultset.ColumnMetaData_DECIMAL, nil},
 		{Mysqlx_Resultset.ColumnMetaData_SINT, nil},
 		{Mysqlx_Resultset.ColumnMetaData_SINT, errors.New("unknown column type 240")},

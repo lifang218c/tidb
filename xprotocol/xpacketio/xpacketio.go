@@ -68,7 +68,7 @@ func NewXPacketIO(conn net.Conn) *XPacketIO {
 	return p
 }
 
-// The message struct is like:
+// ReadPacket reads messages. The message struct is like:
 // -------------------------------------------------------------------------------
 // | header                         | payload                                    |
 // -------------------------------------------------------------------------------
@@ -100,14 +100,14 @@ func (p *XPacketIO) readPacket() ([]byte, error) {
 	length := binary.LittleEndian.Uint32(header)
 
 	data := make([]byte, length)
-	if n, err := io.ReadFull(p.rb, data); err != nil {
+	n, err := io.ReadFull(p.rb, data)
+	if err != nil {
 		return nil, errors.Trace(err)
-	} else {
-		if max, err := strconv.Atoi(variable.GetSysVar(variable.MaxAllowedPacket).Value); err != nil {
-			return nil, err
-		} else if n >= max {
-			return nil, errors.New("packet for query is too large. Try adjusting the 'max_allowed_packet' variable on the server")
-		}
+	}
+	if max, err := strconv.Atoi(variable.GetSysVar(variable.MaxAllowedPacket).Value); err != nil {
+		return nil, err
+	} else if n >= max {
+		return nil, errors.New("packet for query is too large. Try adjusting the 'max_allowed_packet' variable on the server")
 	}
 	return data, nil
 }
@@ -125,9 +125,8 @@ func (p *XPacketIO) writePacket(data []byte) error {
 	}
 	if _, err := p.wb.Write(packet); err != nil {
 		return errors.Trace(mysql.ErrBadConn)
-	} else {
-		return p.Flush()
 	}
+	return p.Flush()
 }
 
 // Flush flushes bufferIO.

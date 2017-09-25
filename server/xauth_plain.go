@@ -15,7 +15,7 @@ package server
 
 type saslPlainAuth struct{}
 
-func (spa *saslPlainAuth) handleStart(mechanism *string, data []byte, initial_response []byte) *response {
+func (spa *saslPlainAuth) handleStart(mechanism *string, data []byte, initialResponses []byte) *response {
 	return nil
 }
 
