@@ -174,23 +174,22 @@ func NewServer(cfg *config.Config, driver IDriver, serverType int) (*Server, err
 	}
 
 	socket := cfg.Socket
-	addr := s.cfg.Addr
+	addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
 	protocol := "MySQL"
 	if serverType == MysqlXProtocol {
-		socket = cfg.XSocket
-		addr = cfg.XAddr
+		socket = cfg.XProtocol.XSocket
+		addr = fmt.Sprintf("%s:%d", s.cfg.XProtocol.XHost, s.cfg.XProtocol.XPort)
 		protocol = "MySQL X"
 	}
 
 	var err error
-	if cfg.Socket != "" {
-		if s.listener, err = net.Listen("unix", cfg.Socket); err == nil {
-			log.Infof("Server is running MySQL Protocol through Socket [%s]", cfg.Socket)
+	if socket != "" {
+		if s.listener, err = net.Listen("unix", socket); err == nil {
+			log.Infof("Server is running %s Protocol through Socket [%s]", protocol, socket)
 		}
 	} else {
-		addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
 		if s.listener, err = net.Listen("tcp", addr); err == nil {
-			log.Infof("Server is running MySQL Protocol at [%s]", addr)
+			log.Infof("Server is running %s Protocol at [%s]", protocol, addr)
 		}
 	}
 	if err != nil {

@@ -44,7 +44,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"google.golang.org/grpc"
-	"github.com/pingcap"
 )
 
 // Flag Names
@@ -68,7 +67,6 @@ const (
 )
 
 var (
-<<<<<<< HEAD
 	version    = flagBoolean(nmVersion, false, "print version information and exit")
 	configPath = flag.String(nmConfig, "", "config file path")
 
@@ -106,7 +104,7 @@ var (
 	storage kv.Storage
 	dom     *domain.Domain
 	svr     *server.Server
-	xsvr    *xserver.Server
+	xsvr    *server.Server
 )
 
 func main() {
@@ -345,16 +343,12 @@ func createServer() {
 	var driver server.IDriver
 	driver = server.NewTiDBDriver(storage)
 	var err error
-	svr, err = server.NewServer(cfg, driver)
+	svr, err = server.NewServer(cfg, driver, server.MysqlProtocol)
 	if err != nil {
 		log.Fatal(errors.ErrorStack(err))
 	}
 	if cfg.XProtocol.XServer {
-		xcfg := &xserver.Config{
-			Addr:   fmt.Sprintf("%s:%d", cfg.XProtocol.XHost, cfg.XProtocol.XPort),
-			Socket: cfg.XProtocol.XSocket,
-		}
-		xsvr, err = xserver.NewServer(xcfg)
+		xsvr, err = server.NewServer(cfg, driver, server.MysqlXProtocol)
 		if err != nil {
 			log.Fatal(errors.ErrorStack(err))
 		}
@@ -373,7 +367,7 @@ func setupSignalHandler() {
 		sig := <-sc
 		log.Infof("Got signal [%d] to exit.", sig)
 		if xsvr != nil {
-			xsvr.Close() // Should close xserver before server.
+			xsvr.Close() // Should close mysqlx server before server.
 		}
 		svr.Close()
 	}()
@@ -389,13 +383,21 @@ func setupMetrics() {
 }
 
 func runServer() {
-	if err := svr.Run(); err != nil {
-		log.Error(err)
-	}
+	var srvError chan error
+	go func() {
+		srvError <- svr.Run()
+	}()
 	if cfg.XProtocol.XServer {
-		if err := xsvr.Run(); err != nil {
-			log.Error(err)
-		}
+		go func() {
+			srvError <- xsvr.Run()
+		}()
+	}
+	var err error
+	select {
+	case err = <-srvError:
+	}
+	if err != nil {
+		log.Error(err)
 	}
 }
 

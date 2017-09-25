@@ -355,7 +355,5 @@ func (ps *perfSchema) GetDBMeta() *model.DBInfo {
 
 func (ps *perfSchema) GetTable(name string) (table.Table, bool) {
 	tbl, ok := ps.mTables[name]
-	data := []types.Datum{types.NewStringDatum("mysqlx_ssl_cipher"), types.NewStringDatum("")}
-	tbl.AddRecord(nil, data)
 	return tbl, ok
 }
