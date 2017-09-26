@@ -287,7 +287,7 @@ func (ts *TidbTestSuite) TestTLS(c *C) {
 			StatusPort:   10091,
 		},
 	}
-	server, err := NewServer(cfg, ts.tidbdrv)
+	server, err := NewServer(cfg, ts.tidbdrv, MysqlProtocol)
 	c.Assert(err, IsNil)
 	go server.Run()
 	time.Sleep(time.Millisecond * 100)
@@ -312,7 +312,7 @@ func (ts *TidbTestSuite) TestTLS(c *C) {
 			SSLKey:  "/tmp/server-key.pem",
 		},
 	}
-	server, err = NewServer(cfg, ts.tidbdrv)
+	server, err = NewServer(cfg, ts.tidbdrv, MysqlProtocol)
 	c.Assert(err, IsNil)
 	go server.Run()
 	time.Sleep(time.Millisecond * 100)
@@ -346,7 +346,7 @@ func (ts *TidbTestSuite) TestTLS(c *C) {
 			SSLKey:  "/tmp/server-key.pem",
 		},
 	}
-	server, err = NewServer(cfg, ts.tidbdrv)
+	server, err = NewServer(cfg, ts.tidbdrv, MysqlProtocol)
 	c.Assert(err, IsNil)
 	go server.Run()
 	time.Sleep(time.Millisecond * 100)
